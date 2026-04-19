@@ -13,6 +13,8 @@ export default function App() {
   const [volatility, setVolatility] = useState(30.0);
   
   const [priceTarget, setPriceTarget] = useState(200);
+  const [priceTarget2, setPriceTarget2] = useState(220);
+  const [priceTarget3, setPriceTarget3] = useState(180);
   const [targetDays, setTargetDays] = useState(30);
   
   const [showGreeks, setShowGreeks] = useState(false);
@@ -20,7 +22,7 @@ export default function App() {
   // New state controls for dynamic strikes
   const [strikeMinPct, setStrikeMinPct] = useState(80);
   const [strikeMaxPct, setStrikeMaxPct] = useState(130);
-  const [strikeStepPct, setStrikeStepPct] = useState(5);
+  const [numStrikes, setNumStrikes] = useState(20);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -37,6 +39,8 @@ export default function App() {
       } else if (data.price) {
         setPrice(data.price);
         setPriceTarget(+(data.price * 1.2).toFixed(2));
+        setPriceTarget2(+(data.price * 1.3).toFixed(2));
+        setPriceTarget3(+(data.price * 1.1).toFixed(2));
       }
     } catch (e) {
       setError("Failed to fetch price. Is the backend running?");
@@ -50,18 +54,24 @@ export default function App() {
   };
 
   const calculateStrikes = () => {
-    if (price <= 0 || strikeStepPct <= 0) return [];
+    if (price <= 0 || numStrikes <= 1) return [];
     
     let rawStrikes = [];
     const minMult = strikeMinPct / 100.0;
     const maxMult = strikeMaxPct / 100.0;
-    const step = strikeStepPct / 100.0;
+    const step = (maxMult - minMult) / (numStrikes - 1);
 
-    for (let m = minMult; m <= maxMult + 0.0001; m += step) {
+    for (let i = 0; i < numStrikes; i++) {
+      let m = minMult + (i * step);
       let strike = price * m;
-      if (strike > 100) strike = Math.round(strike / 5) * 5;
-      else if (strike > 20) strike = Math.round(strike);
-      else strike = +(strike.toFixed(1));
+      
+      if (price > 100) {
+        strike = Math.round(strike);
+      } else if (price > 10) {
+        strike = +(Math.round(strike * 2) / 2).toFixed(1); // round to 0.5
+      } else {
+        strike = +(strike.toFixed(2));
+      }
       
       if (!rawStrikes.includes(strike)) {
         rawStrikes.push(strike);
@@ -79,10 +89,14 @@ export default function App() {
 
       const targetT = targetDays / 365.0;
       const targetMetrics = bsCallMetrics(priceTarget, strike, targetT, r, v);
+      const targetMetrics2 = bsCallMetrics(priceTarget2, strike, targetT, r, v);
+      const targetMetrics3 = bsCallMetrics(priceTarget3, strike, targetT, r, v);
 
-      let moic = 0;
+      let moic = 0, moic2 = 0, moic3 = 0;
       if (currentMetrics.price > 0) {
         moic = targetMetrics.price / currentMetrics.price;
+        moic2 = targetMetrics2.price / currentMetrics.price;
+        moic3 = targetMetrics3.price / currentMetrics.price;
       }
 
       return {
@@ -92,7 +106,11 @@ export default function App() {
         extrinsic: currentMetrics.extrinsic,
         greeks: currentMetrics.greeks,
         targetPremium: targetMetrics.price,
-        moic
+        targetPremium2: targetMetrics2.price,
+        targetPremium3: targetMetrics3.price,
+        moic,
+        moic2,
+        moic3
       };
     });
   };
@@ -182,19 +200,37 @@ export default function App() {
 
             <div className="glass-panel rounded-2xl p-6 space-y-4 border-l-2 border-l-emerald-500">
               <h2 className="text-lg font-semibold border-b border-white/10 pb-2 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-emerald-500" /> Scenario Target
+                <TrendingUp className="w-5 h-5 text-emerald-500" /> Scenario Targets
               </h2>
-              <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-3 gap-2 text-sm">
                 <div>
-                  <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1">Price Target ($)</label>
+                  <label className="block text-[10px] uppercase tracking-wide text-emerald-400 mb-1">Target 1</label>
                   <input 
                     type="number" step="0.1" 
                     value={priceTarget} 
                     onChange={(e) => setPriceTarget(parseFloat(e.target.value) || 0)}
-                    className="bg-slate-800/50 font-bold border border-emerald-500/50 rounded-lg px-3 py-2 w-full focus:ring-emerald-500"
+                    className="bg-slate-800/50 font-bold border border-emerald-500/50 rounded-lg px-2 py-2 w-full focus:ring-emerald-500 focus:outline-none"
                   />
                 </div>
                 <div>
+                  <label className="block text-[10px] uppercase tracking-wide text-blue-400 mb-1">Target 2</label>
+                  <input 
+                    type="number" step="0.1" 
+                    value={priceTarget2} 
+                    onChange={(e) => setPriceTarget2(parseFloat(e.target.value) || 0)}
+                    className="bg-slate-800/50 border border-blue-500/50 rounded-lg px-2 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wide text-purple-400 mb-1">Target 3</label>
+                  <input 
+                    type="number" step="0.1" 
+                    value={priceTarget3} 
+                    onChange={(e) => setPriceTarget3(parseFloat(e.target.value) || 0)}
+                    className="bg-slate-800/50 border border-purple-500/50 rounded-lg px-2 py-2 w-full focus:ring-2 focus:ring-purple-400 focus:outline-none"
+                  />
+                </div>
+                <div className="col-span-3 mt-2">
                   <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1">Days left at Target</label>
                   <input 
                     type="number" 
@@ -230,11 +266,11 @@ export default function App() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1">Step Interval (%)</label>
+                  <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1">Number of Strikes</label>
                   <input 
                     type="number" step="1" 
-                    value={strikeStepPct} 
-                    onChange={(e) => setStrikeStepPct(parseFloat(e.target.value) || 0)}
+                    value={numStrikes} 
+                    onChange={(e) => setNumStrikes(parseInt(e.target.value) || 0)}
                     className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-purple-400 focus:outline-none"
                   />
                 </div>
@@ -259,11 +295,13 @@ export default function App() {
                         <YAxis stroke="#94a3b8" tick={{fontSize: 12}} tickFormatter={(v) => `${v}x`} />
                         <Tooltip 
                           contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px' }}
-                          itemStyle={{ color: '#10b981' }}
-                          formatter={(value) => [`${value.toFixed(2)}x`, 'MOIC']}
+                          formatter={(value, name) => [`${value.toFixed(2)}x`, name]}
                           labelFormatter={(label) => `Strike: $${label}`}
                         />
-                        <Line type="monotone" dataKey="moic" stroke="#10b981" strokeWidth={3} dot={{r: 4, fill: '#10b981', strokeWidth: 0}} activeDot={{r: 6}} />
+                        <Legend wrapperStyle={{fontSize: '12px', paddingTop: '10px'}} />
+                        <Line type="monotone" name="Target 1 MOIC" dataKey="moic" stroke="#10b981" strokeWidth={3} dot={{r: 4, fill: '#10b981', strokeWidth: 0}} activeDot={{r: 6}} />
+                        <Line type="monotone" name="Target 2 MOIC" dataKey="moic2" stroke="#3b82f6" strokeWidth={3} dot={{r: 4, fill: '#3b82f6', strokeWidth: 0}} activeDot={{r: 6}} />
+                        <Line type="monotone" name="Target 3 MOIC" dataKey="moic3" stroke="#a855f7" strokeWidth={3} dot={{r: 4, fill: '#a855f7', strokeWidth: 0}} activeDot={{r: 6}} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -316,55 +354,82 @@ export default function App() {
               </div>
 
               <div className="overflow-x-auto pb-4">
-                <table className="w-full text-left border-collapse whitespace-nowrap min-w-max text-sm">
+                <table className="w-full text-left border-collapse whitespace-nowrap text-sm">
                   <thead>
                     <tr className="border-b border-slate-700 text-slate-400">
-                      <th className="pb-3 px-4 font-medium uppercase tracking-wide text-xs">Strike Price</th>
-                      <th className="pb-3 px-4 font-medium uppercase tracking-wide text-xs">Premium</th>
+                      <th className="pb-2 px-2 font-medium uppercase tracking-wide text-xs">Strike</th>
+                      <th className="pb-2 px-2 font-medium uppercase tracking-wide text-xs">Premium</th>
                       {showGreeks && (
                         <>
-                          <th className="pb-3 px-4 font-medium text-amber-500/80 uppercase tracking-wide text-xs">Intrinsic</th>
-                          <th className="pb-3 px-4 font-medium text-amber-500/80 uppercase tracking-wide text-xs">Extrinsic</th>
-                          <th className="pb-3 px-4 font-medium uppercase tracking-wide text-xs">Δ Delta</th>
-                          <th className="pb-3 px-4 font-medium uppercase tracking-wide text-xs">Γ Gamma</th>
-                          <th className="pb-3 px-4 font-medium uppercase tracking-wide text-xs">Θ Theta</th>
-                          <th className="pb-3 px-4 font-medium uppercase tracking-wide text-xs">ν Vega</th>
-                          <th className="pb-3 px-4 font-medium uppercase tracking-wide text-xs">ρ Rho</th>
+                          <th className="pb-2 px-2 font-medium text-amber-500/80 uppercase tracking-wide text-[11px]">Int</th>
+                          <th className="pb-2 px-2 font-medium text-amber-500/80 uppercase tracking-wide text-[11px]">Ext</th>
+                          <th className="pb-2 px-2 font-medium uppercase tracking-wide text-[11px]">Δ Delta</th>
+                          <th className="pb-2 px-2 font-medium uppercase tracking-wide text-[11px]">Γ Gamma</th>
+                          <th className="pb-2 px-2 font-medium uppercase tracking-wide text-[11px]">Θ Theta</th>
+                          <th className="pb-2 px-2 font-medium uppercase tracking-wide text-[11px]">ν Vega</th>
+                          <th className="pb-2 px-2 font-medium uppercase tracking-wide text-[11px]">ρ Rho</th>
                         </>
                       )}
-                      <th className="pb-3 px-4 font-medium uppercase tracking-wide text-xs">Target Value</th>
-                      <th className="pb-3 px-4 font-medium text-right uppercase tracking-wide text-xs">MOIC</th>
+                      <th className="pb-2 px-1 font-medium uppercase tracking-wide text-[10px] text-emerald-400/80">T1 Val</th>
+                      <th className="pb-2 px-1 font-medium text-right uppercase tracking-wide text-[10px] text-emerald-400/80">MOIC 1</th>
+                      <th className="pb-2 px-1 font-medium uppercase tracking-wide text-[10px] text-blue-400/80">T2 Val</th>
+                      <th className="pb-2 px-1 font-medium text-right uppercase tracking-wide text-[10px] text-blue-400/80">MOIC 2</th>
+                      <th className="pb-2 px-1 font-medium uppercase tracking-wide text-[10px] text-purple-400/80">T3 Val</th>
+                      <th className="pb-2 px-1 font-medium text-right uppercase tracking-wide text-[10px] text-purple-400/80">MOIC 3</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
                     {results.map((res, i) => {
-                      const isAtm = Math.abs(res.strike - price) < (price * 0.05);
+                      const isAtm = Math.abs(res.strike - price) <= (price * 0.015);
+                      const isItm = price > res.strike && !isAtm;
+                      const isOtm = price < res.strike && !isAtm;
+                      
+                      const rowClass = showGreeks ? 'py-1.5' : 'py-3';
+                      
                       return (
                         <tr key={i} className={`hover:bg-slate-800/30 transition-colors ${isAtm ? 'bg-blue-500/5' : ''}`}>
-                          <td className="py-3 px-4 font-medium flex items-center gap-2">
+                          <td className={`${rowClass} px-2 font-medium flex items-center gap-1.5`}>
                             ${res.strike.toFixed(2)}
-                            {isAtm && <span className="text-[10px] bg-blue-500/20 text-blue-500 px-2 py-0.5 rounded-full">ATM</span>}
+                            {isAtm && <span className="text-[9px] font-bold bg-blue-500/20 text-blue-500 px-1.5 py-0.5 rounded">ATM</span>}
+                            {isItm && <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-500 px-1.5 py-0.5 rounded">ITM</span>}
+                            {isOtm && <span className="text-[9px] font-bold bg-rose-500/20 text-rose-500 px-1.5 py-0.5 rounded">OTM</span>}
                           </td>
-                          <td className="py-3 px-4 text-slate-300">
+                          <td className={`${rowClass} px-2 text-slate-300 font-medium`}>
                             ${res.currentPremium.toFixed(2)}
                           </td>
                           {showGreeks && (
                             <>
-                              <td className="py-3 px-4 text-amber-500/80">${res.intrinsic.toFixed(2)}</td>
-                              <td className="py-3 px-4 text-amber-500/80">${res.extrinsic.toFixed(2)}</td>
-                              <td className="py-3 px-4 text-slate-400">{res.greeks.delta.toFixed(3)}</td>
-                              <td className="py-3 px-4 text-slate-400">{res.greeks.gamma.toFixed(4)}</td>
-                              <td className="py-3 px-4 text-slate-400">{res.greeks.theta.toFixed(3)}</td>
-                              <td className="py-3 px-4 text-slate-400">{res.greeks.vega.toFixed(3)}</td>
-                              <td className="py-3 px-4 text-slate-400">{res.greeks.rho.toFixed(3)}</td>
+                              <td className={`${rowClass} px-2 text-[11px] text-amber-500/80`}>${res.intrinsic.toFixed(2)}</td>
+                              <td className={`${rowClass} px-2 text-[11px] text-amber-500/80`}>${res.extrinsic.toFixed(2)}</td>
+                              <td className={`${rowClass} px-2 text-[11px] text-slate-400`}>{res.greeks.delta.toFixed(3)}</td>
+                              <td className={`${rowClass} px-2 text-[11px] text-slate-400`}>{res.greeks.gamma.toFixed(4)}</td>
+                              <td className={`${rowClass} px-2 text-[11px] text-slate-400`}>{res.greeks.theta.toFixed(3)}</td>
+                              <td className={`${rowClass} px-2 text-[11px] text-slate-400`}>{res.greeks.vega.toFixed(3)}</td>
+                              <td className={`${rowClass} px-2 text-[11px] text-slate-400`}>{res.greeks.rho.toFixed(3)}</td>
                             </>
                           )}
-                          <td className="py-3 px-4 text-slate-300">
+                          <td className={`${rowClass} px-1 text-[11px] text-slate-300`}>
                             ${res.targetPremium.toFixed(2)}
                           </td>
-                          <td className="py-3 px-4 text-right">
-                            <span className={`inline-flex items-center gap-1 font-bold ${res.moic >= 1 ? 'text-emerald-500' : 'text-red-500'}`}>
+                          <td className={`${rowClass} px-1 text-[11px] text-right`}>
+                            <span className={`inline-flex items-center gap-1 font-bold ${res.moic >= 1 ? 'text-emerald-500' : 'text-rose-500'}`}>
                               {res.moic.toFixed(2)}x
+                            </span>
+                          </td>
+                          <td className={`${rowClass} px-1 text-[11px] text-slate-300`}>
+                            ${res.targetPremium2.toFixed(2)}
+                          </td>
+                          <td className={`${rowClass} px-1 text-[11px] text-right`}>
+                            <span className={`inline-flex items-center gap-1 font-bold ${res.moic2 >= 1 ? 'text-blue-500' : 'text-blue-500/50'}`}>
+                              {res.moic2.toFixed(2)}x
+                            </span>
+                          </td>
+                          <td className={`${rowClass} px-1 text-[11px] text-slate-300`}>
+                            ${res.targetPremium3.toFixed(2)}
+                          </td>
+                          <td className={`${rowClass} px-1 text-[11px] text-right`}>
+                            <span className={`inline-flex items-center gap-1 font-bold ${res.moic3 >= 1 ? 'text-purple-400' : 'text-purple-400/50'}`}>
+                              {res.moic3.toFixed(2)}x
                             </span>
                           </td>
                         </tr>

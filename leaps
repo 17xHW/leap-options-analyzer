@@ -1,0 +1,39 @@
+#!/bin/bash
+
+PROJECT_DIR="/home/o17/.gemini/antigravity/scratch/leap_options_analyzer"
+
+echo "======================================"
+echo " Starting LEAP Options Analyzer..."
+echo "======================================"
+
+cleanup() {
+    echo -e "\nShutting down LEAP Options Analyzer..."
+    kill $BACKEND_PID 2>/dev/null
+    fuser -k 8001/tcp 2>/dev/null
+    fuser -k 5173/tcp 2>/dev/null
+    exit 0
+}
+
+# Catch Ctrl+C and exit signals
+trap cleanup SIGINT SIGTERM
+
+echo "-> Starting Backend API (Port 8001)..."
+cd "$PROJECT_DIR/backend"
+fuser -k 8001/tcp 2>/dev/null
+
+# Activate venv if it exists, otherwise just run python3
+if [ -d "venv" ]; then
+    source venv/bin/activate
+fi
+python3 -m uvicorn main:app --port 8001 > /dev/null 2>&1 &
+BACKEND_PID=$!
+
+echo "-> Starting Frontend Dashboard (Port 5173)..."
+cd "$PROJECT_DIR/frontend"
+fuser -k 5173/tcp 2>/dev/null
+
+# Launch Vite and automatically open browser tab
+npm run dev -- --open
+
+# Wait for frontend to close
+wait
