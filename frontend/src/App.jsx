@@ -204,7 +204,7 @@ export default function App() {
               </h2>
               <div className="grid grid-cols-3 gap-2 text-sm">
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wide text-emerald-400 mb-1">Target 1</label>
+                  <label className="block text-[10px] uppercase tracking-wide text-emerald-400 mb-1">Target 1 ($)</label>
                   <input 
                     type="number" step="0.1" 
                     value={priceTarget} 
@@ -213,21 +213,21 @@ export default function App() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wide text-blue-400 mb-1">Target 2</label>
+                  <label className="block text-[10px] uppercase tracking-wide text-blue-400 mb-1">Target 2 ($)</label>
                   <input 
                     type="number" step="0.1" 
                     value={priceTarget2} 
                     onChange={(e) => setPriceTarget2(parseFloat(e.target.value) || 0)}
-                    className="bg-slate-800/50 border border-blue-500/50 rounded-lg px-2 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="bg-slate-800/50 font-bold border border-blue-500/50 rounded-lg px-2 py-2 w-full focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wide text-purple-400 mb-1">Target 3</label>
+                  <label className="block text-[10px] uppercase tracking-wide text-purple-400 mb-1">Target 3 ($)</label>
                   <input 
                     type="number" step="0.1" 
                     value={priceTarget3} 
                     onChange={(e) => setPriceTarget3(parseFloat(e.target.value) || 0)}
-                    className="bg-slate-800/50 border border-purple-500/50 rounded-lg px-2 py-2 w-full focus:ring-2 focus:ring-purple-400 focus:outline-none"
+                    className="bg-slate-800/50 font-bold border border-purple-500/50 rounded-lg px-2 py-2 w-full focus:ring-2 focus:ring-purple-400 focus:outline-none"
                   />
                 </div>
                 <div className="col-span-3 mt-2">
@@ -299,9 +299,9 @@ export default function App() {
                           labelFormatter={(label) => `Strike: $${label}`}
                         />
                         <Legend wrapperStyle={{fontSize: '12px', paddingTop: '10px'}} />
-                        <Line type="monotone" name="Target 1 MOIC" dataKey="moic" stroke="#10b981" strokeWidth={3} dot={{r: 4, fill: '#10b981', strokeWidth: 0}} activeDot={{r: 6}} />
-                        <Line type="monotone" name="Target 2 MOIC" dataKey="moic2" stroke="#3b82f6" strokeWidth={3} dot={{r: 4, fill: '#3b82f6', strokeWidth: 0}} activeDot={{r: 6}} />
-                        <Line type="monotone" name="Target 3 MOIC" dataKey="moic3" stroke="#a855f7" strokeWidth={3} dot={{r: 4, fill: '#a855f7', strokeWidth: 0}} activeDot={{r: 6}} />
+                        <Line type="monotone" name={`T1 (${priceTarget}) MOIC`} dataKey="moic" stroke="#10b981" strokeWidth={3} dot={{r: 4, fill: '#10b981', strokeWidth: 0}} activeDot={{r: 6}} />
+                        <Line type="monotone" name={`T2 (${priceTarget2}) MOIC`} dataKey="moic2" stroke="#3b82f6" strokeWidth={3} dot={{r: 4, fill: '#3b82f6', strokeWidth: 0}} activeDot={{r: 6}} />
+                        <Line type="monotone" name={`T3 (${priceTarget3}) MOIC`} dataKey="moic3" stroke="#a855f7" strokeWidth={3} dot={{r: 4, fill: '#a855f7', strokeWidth: 0}} activeDot={{r: 6}} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -323,8 +323,10 @@ export default function App() {
                           formatter={(value) => [`$${value.toFixed(2)}`]}
                         />
                         <Legend wrapperStyle={{fontSize: '12px', paddingTop: '10px'}} />
-                        <Line type="monotone" name="Initial Premium" dataKey="currentPremium" stroke="#3b82f6" strokeWidth={2} dot={{r: 2}} />
-                        <Line type="monotone" name="Target Payout" dataKey="targetPremium" stroke="#a855f7" strokeWidth={3} dot={{r: 3}} />
+                        <Line type="monotone" name="Initial Premium" dataKey="currentPremium" stroke="#64748b" strokeWidth={2} dot={{r: 2}} />
+                        <Line type="monotone" name={`T1 (${priceTarget}) Premium`} dataKey="targetPremium" stroke="#10b981" strokeWidth={3} dot={{r: 3}} />
+                        <Line type="monotone" name={`T2 (${priceTarget2}) Premium`} dataKey="targetPremium2" stroke="#3b82f6" strokeWidth={3} dot={{r: 3}} />
+                        <Line type="monotone" name={`T3 (${priceTarget3}) Premium`} dataKey="targetPremium3" stroke="#a855f7" strokeWidth={3} dot={{r: 3}} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -370,12 +372,24 @@ export default function App() {
                           <th className="pb-2 px-2 font-medium uppercase tracking-wide text-[11px]">ρ Rho</th>
                         </>
                       )}
-                      <th className="pb-2 px-1 font-medium uppercase tracking-wide text-[10px] text-emerald-400/80">T1 Val</th>
-                      <th className="pb-2 px-1 font-medium text-right uppercase tracking-wide text-[10px] text-emerald-400/80">MOIC 1</th>
-                      <th className="pb-2 px-1 font-medium uppercase tracking-wide text-[10px] text-blue-400/80">T2 Val</th>
-                      <th className="pb-2 px-1 font-medium text-right uppercase tracking-wide text-[10px] text-blue-400/80">MOIC 2</th>
-                      <th className="pb-2 px-1 font-medium uppercase tracking-wide text-[10px] text-purple-400/80">T3 Val</th>
-                      <th className="pb-2 px-1 font-medium text-right uppercase tracking-wide text-[10px] text-purple-400/80">MOIC 3</th>
+                      <th className="pb-2 px-2 font-medium tracking-wide text-[10px] text-emerald-400/80">
+                        <div className="flex items-center justify-end gap-2 uppercase">
+                          <span className="w-12 text-right">T1(${priceTarget})</span>
+                          <span className="w-12 text-right">MOIC 1</span>
+                        </div>
+                      </th>
+                      <th className="pb-2 px-2 font-medium tracking-wide text-[10px] text-blue-400/80">
+                        <div className="flex items-center justify-end gap-2 uppercase">
+                          <span className="w-12 text-right">T2(${priceTarget2})</span>
+                          <span className="w-12 text-right">MOIC 2</span>
+                        </div>
+                      </th>
+                      <th className="pb-2 px-2 font-medium tracking-wide text-[10px] text-purple-400/80">
+                        <div className="flex items-center justify-end gap-2 uppercase">
+                          <span className="w-12 text-right">T3(${priceTarget3})</span>
+                          <span className="w-12 text-right">MOIC 3</span>
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
@@ -408,29 +422,29 @@ export default function App() {
                               <td className={`${rowClass} px-2 text-[11px] text-slate-400`}>{res.greeks.rho.toFixed(3)}</td>
                             </>
                           )}
-                          <td className={`${rowClass} px-1 text-[11px] text-slate-300`}>
-                            ${res.targetPremium.toFixed(2)}
+                          <td className={`${rowClass} px-2`}>
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-[11px] text-slate-300 w-12 text-right">${res.targetPremium.toFixed(2)}</span>
+                              <span className={`w-12 text-right text-[11px] font-bold ${res.moic >= 1 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                {res.moic.toFixed(2)}x
+                              </span>
+                            </div>
                           </td>
-                          <td className={`${rowClass} px-1 text-[11px] text-right`}>
-                            <span className={`inline-flex items-center gap-1 font-bold ${res.moic >= 1 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                              {res.moic.toFixed(2)}x
-                            </span>
+                          <td className={`${rowClass} px-2`}>
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-[11px] text-slate-300 w-12 text-right">${res.targetPremium2.toFixed(2)}</span>
+                              <span className={`w-12 text-right text-[11px] font-bold ${res.moic2 >= 1 ? 'text-blue-500' : 'text-blue-500/50'}`}>
+                                {res.moic2.toFixed(2)}x
+                              </span>
+                            </div>
                           </td>
-                          <td className={`${rowClass} px-1 text-[11px] text-slate-300`}>
-                            ${res.targetPremium2.toFixed(2)}
-                          </td>
-                          <td className={`${rowClass} px-1 text-[11px] text-right`}>
-                            <span className={`inline-flex items-center gap-1 font-bold ${res.moic2 >= 1 ? 'text-blue-500' : 'text-blue-500/50'}`}>
-                              {res.moic2.toFixed(2)}x
-                            </span>
-                          </td>
-                          <td className={`${rowClass} px-1 text-[11px] text-slate-300`}>
-                            ${res.targetPremium3.toFixed(2)}
-                          </td>
-                          <td className={`${rowClass} px-1 text-[11px] text-right`}>
-                            <span className={`inline-flex items-center gap-1 font-bold ${res.moic3 >= 1 ? 'text-purple-400' : 'text-purple-400/50'}`}>
-                              {res.moic3.toFixed(2)}x
-                            </span>
+                          <td className={`${rowClass} px-2`}>
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-[11px] text-slate-300 w-12 text-right">${res.targetPremium3.toFixed(2)}</span>
+                              <span className={`w-12 text-right text-[11px] font-bold ${res.moic3 >= 1 ? 'text-purple-400' : 'text-purple-400/50'}`}>
+                                {res.moic3.toFixed(2)}x
+                              </span>
+                            </div>
                           </td>
                         </tr>
                       );
