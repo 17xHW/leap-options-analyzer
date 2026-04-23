@@ -10,6 +10,7 @@ export default function App() {
   const [price, setPrice] = useState(150);
   const [expiryDays, setExpiryDays] = useState(365);
   const [riskFreeRate, setRiskFreeRate] = useState(5.0);
+  const [dividendYield, setDividendYield] = useState(0.0);
   const [volatility, setVolatility] = useState(30.0);
   
   const [priceTarget, setPriceTarget] = useState(200);
@@ -85,12 +86,13 @@ export default function App() {
       const currentT = expiryDays / 365.0;
       const r = riskFreeRate / 100.0;
       const v = volatility / 100.0;
-      const currentMetrics = bsCallMetrics(price, strike, currentT, r, v);
+      const q = dividendYield / 100.0;
+      const currentMetrics = bsCallMetrics(price, strike, currentT, r, v, q);
 
       const targetT = targetDays / 365.0;
-      const targetMetrics = bsCallMetrics(priceTarget, strike, targetT, r, v);
-      const targetMetrics2 = bsCallMetrics(priceTarget2, strike, targetT, r, v);
-      const targetMetrics3 = bsCallMetrics(priceTarget3, strike, targetT, r, v);
+      const targetMetrics = bsCallMetrics(priceTarget, strike, targetT, r, v, q);
+      const targetMetrics2 = bsCallMetrics(priceTarget2, strike, targetT, r, v, q);
+      const targetMetrics3 = bsCallMetrics(priceTarget3, strike, targetT, r, v, q);
 
       let moic = 0, moic2 = 0, moic3 = 0;
       if (currentMetrics.price > 0) {
@@ -186,12 +188,21 @@ export default function App() {
                     className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 w-full"
                   />
                 </div>
-                <div className="col-span-2">
+                <div>
                   <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1">Risk-Free Rate (%)</label>
                   <input 
                     type="number" step="0.1" 
                     value={riskFreeRate} 
                     onChange={(e) => setRiskFreeRate(parseFloat(e.target.value) || 0)}
+                    className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wide text-slate-400 mb-1">Div Yield (%)</label>
+                  <input 
+                    type="number" step="0.1" 
+                    value={dividendYield} 
+                    onChange={(e) => setDividendYield(parseFloat(e.target.value) || 0)}
                     className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 w-full"
                   />
                 </div>

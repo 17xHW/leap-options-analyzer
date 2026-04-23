@@ -30,8 +30,8 @@ function normCDF(x) {
  * @param {number} v - Volatility (as a decimal, e.g. 0.20 for 20%)
  * @returns {number} - Call Option Price
  */
-export function bsCallPrice(S, K, t, r, v) {
-    return bsCallMetrics(S, K, t, r, v).price;
+export function bsCallPrice(S, K, t, r, v, q = 0) {
+    return bsCallMetrics(S, K, t, r, v, q).price;
 }
 
 /**
@@ -44,12 +44,13 @@ function normPDF(x) {
 /**
  * Calculate Call Option price, Intrinsic, Extrinsic, and Greeks
  */
-export function bsCallMetrics(S, K, t, r, v) {
+export function bsCallMetrics(S, K, t, r, v, q = 0) {
     S = parseFloat(S);
     K = parseFloat(K);
     t = parseFloat(t);
     r = parseFloat(r);
     v = parseFloat(v);
+    q = parseFloat(q);
 
     let price = 0;
     let intrinsic = Math.max(0, S - K);
@@ -61,20 +62,22 @@ export function bsCallMetrics(S, K, t, r, v) {
     }
     
     if (S > 0 && K > 0 && v > 0) {
-        const d1 = (Math.log(S / K) + (r + (v * v) / 2) * t) / (v * Math.sqrt(t));
+        const d1 = (Math.log(S / K) + (r - q + (v * v) / 2) * t) / (v * Math.sqrt(t));
         const d2 = d1 - v * Math.sqrt(t);
         const nd1 = normCDF(d1);
         const nd2 = normCDF(d2);
         const npdf = normPDF(d1);
+        const eqt = Math.exp(-q * t);
+        const ert = Math.exp(-r * t);
 
-        price = S * nd1 - K * Math.exp(-r * t) * nd2;
+        price = S * eqt * nd1 - K * ert * nd2;
         extrinsic = Math.max(0, price - intrinsic);
 
-        delta = nd1;
-        gamma = npdf / (S * v * Math.sqrt(t));
-        vega = (S * npdf * Math.sqrt(t)) / 100; // per 1% vol
-        theta = (-(S * npdf * v) / (2 * Math.sqrt(t)) - r * K * Math.exp(-r * t) * nd2) / 365; // per 1 day
-        rho = (K * t * Math.exp(-r * t) * nd2) / 100; // per 1% rate
+        delta = eqt * nd1;
+        gamma = (eqt * npdf) / (S * v * Math.sqrt(t));
+        vega = (S * eqt * npdf * Math.sqrt(t)) / 100; // per 1% vol
+        theta = ( -(S * eqt * npdf * v) / (2 * Math.sqrt(t)) + q * S * eqt * nd1 - r * K * ert * nd2 ) / 365; // per 1 day
+        rho = (K * t * ert * nd2) / 100; // per 1% rate
     }
 
     return {
