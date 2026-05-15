@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calculator, TrendingUp, Search, Clock, Activity, Percent, SlidersHorizontal, BarChart2 } from 'lucide-react';
-import { bsCallMetrics } from './utils/blackScholes';
+import { bsCallMetrics, bsPutMetrics } from './utils/blackScholes';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
@@ -19,6 +19,7 @@ export default function App() {
   const [targetDays, setTargetDays] = useState(30);
   
   const [showGreeks, setShowGreeks] = useState(false);
+  const [optionType, setOptionType] = useState('call');
 
   // New state controls for dynamic strikes
   const [strikeMinPct, setStrikeMinPct] = useState(80);
@@ -87,12 +88,14 @@ export default function App() {
       const r = riskFreeRate / 100.0;
       const v = volatility / 100.0;
       const q = dividendYield / 100.0;
-      const currentMetrics = bsCallMetrics(price, strike, currentT, r, v, q);
+      
+      const metricsFn = optionType === 'call' ? bsCallMetrics : bsPutMetrics;
+      const currentMetrics = metricsFn(price, strike, currentT, r, v, q);
 
       const targetT = targetDays / 365.0;
-      const targetMetrics = bsCallMetrics(priceTarget, strike, targetT, r, v, q);
-      const targetMetrics2 = bsCallMetrics(priceTarget2, strike, targetT, r, v, q);
-      const targetMetrics3 = bsCallMetrics(priceTarget3, strike, targetT, r, v, q);
+      const targetMetrics = metricsFn(priceTarget, strike, targetT, r, v, q);
+      const targetMetrics2 = metricsFn(priceTarget2, strike, targetT, r, v, q);
+      const targetMetrics3 = metricsFn(priceTarget3, strike, targetT, r, v, q);
 
       let moic = 0, moic2 = 0, moic3 = 0;
       if (currentMetrics.price > 0) {
@@ -133,9 +136,23 @@ export default function App() {
           
           <div className="col-span-1 space-y-6">
             <div className="glass-panel rounded-2xl p-6 space-y-4">
-              <h2 className="text-lg font-semibold border-b border-white/10 pb-2 mb-4 flex items-center gap-2">
-                <Search className="w-5 h-5 text-blue-500" /> Asset Base
-              </h2>
+              <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-4">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <Search className="w-5 h-5 text-blue-500" /> Asset Base
+                </h2>
+                <div className="flex bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+                  <button 
+                    onClick={() => setOptionType('call')}
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${optionType === 'call' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>
+                    Calls
+                  </button>
+                  <button 
+                    onClick={() => setOptionType('put')}
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${optionType === 'put' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>
+                    Puts
+                  </button>
+                </div>
+              </div>
               <form onSubmit={handleFetch} className="space-y-4">
                 <div>
                   <label className="block text-xs uppercase tracking-wide font-medium text-slate-400 mb-1">Ticker Symbol</label>
@@ -347,7 +364,7 @@ export default function App() {
             <div className="glass-panel rounded-2xl p-8 flex-1">
               <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold">Call Option Strategy Matrix</h2>
+                  <h2 className="text-2xl font-bold">{optionType === 'call' ? 'Call' : 'Put'} Option Strategy Matrix</h2>
                   <p className="text-slate-400 text-sm mt-1">Numerical analysis for target price {priceTarget}</p>
                 </div>
                 <div className="text-right flex flex-wrap items-center gap-4 bg-slate-800/50 px-4 py-2 rounded-xl">
@@ -406,8 +423,8 @@ export default function App() {
                   <tbody className="divide-y divide-slate-800">
                     {results.map((res, i) => {
                       const isAtm = Math.abs(res.strike - price) <= (price * 0.015);
-                      const isItm = price > res.strike && !isAtm;
-                      const isOtm = price < res.strike && !isAtm;
+                      const isItm = optionType === 'call' ? (price > res.strike && !isAtm) : (price < res.strike && !isAtm);
+                      const isOtm = optionType === 'call' ? (price < res.strike && !isAtm) : (price > res.strike && !isAtm);
                       
                       const rowClass = showGreeks ? 'py-1.5' : 'py-3';
                       

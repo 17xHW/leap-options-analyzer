@@ -88,3 +88,58 @@ export function bsCallMetrics(S, K, t, r, v, q = 0) {
     };
 }
 
+/**
+ * Calculate Put Option price using Black-Scholes formula
+ */
+export function bsPutPrice(S, K, t, r, v, q = 0) {
+    return bsPutMetrics(S, K, t, r, v, q).price;
+}
+
+/**
+ * Calculate Put Option price, Intrinsic, Extrinsic, and Greeks
+ */
+export function bsPutMetrics(S, K, t, r, v, q = 0) {
+    S = parseFloat(S);
+    K = parseFloat(K);
+    t = parseFloat(t);
+    r = parseFloat(r);
+    v = parseFloat(v);
+    q = parseFloat(q);
+
+    let price = 0;
+    let intrinsic = Math.max(0, K - S);
+    let extrinsic = 0;
+    let delta = 0, gamma = 0, theta = 0, vega = 0, rho = 0;
+
+    if (t <= 0) {
+        return { price: intrinsic, intrinsic, extrinsic: 0, greeks: { delta: S < K ? -1 : 0, gamma: 0, theta: 0, vega: 0, rho: 0 } };
+    }
+    
+    if (S > 0 && K > 0 && v > 0) {
+        const d1 = (Math.log(S / K) + (r - q + (v * v) / 2) * t) / (v * Math.sqrt(t));
+        const d2 = d1 - v * Math.sqrt(t);
+        const nd1_neg = normCDF(-d1);
+        const nd2_neg = normCDF(-d2);
+        const nd1 = normCDF(d1);
+        const npdf = normPDF(d1);
+        const eqt = Math.exp(-q * t);
+        const ert = Math.exp(-r * t);
+
+        price = K * ert * nd2_neg - S * eqt * nd1_neg;
+        extrinsic = Math.max(0, price - intrinsic);
+
+        delta = eqt * (nd1 - 1);
+        gamma = (eqt * npdf) / (S * v * Math.sqrt(t));
+        vega = (S * eqt * npdf * Math.sqrt(t)) / 100; // per 1% vol
+        theta = ( -(S * eqt * npdf * v) / (2 * Math.sqrt(t)) - r * K * ert * nd2_neg + q * S * eqt * nd1_neg ) / 365; // per 1 day
+        rho = -(K * t * ert * nd2_neg) / 100; // per 1% rate
+    }
+
+    return {
+        price,
+        intrinsic,
+        extrinsic,
+        greeks: { delta, gamma, theta, vega, rho }
+    };
+}
+
